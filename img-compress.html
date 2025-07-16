@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi Tool Hub - Fully Functional</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- JS Libraries for Functionality -->
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- pdf.js for rendering PDF pages to images -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
+    </script>
+
+
+    <style>
+        :root {
+            --main-bg-color: #0d0f14; --navbar-bg-color: #1c222d; --sidebar-bg-color: #12151a;
+            --text-color-primary: #ffffff; --text-color-secondary: #e0e0e0; --accent-cyan-glow: #42f8f5;
+            --glow-shadow: rgba(66, 248, 245, 0.6); --button-bg: #12151a; --font-family: 'Orbitron', sans-serif;
+            --error-color: #ff4d4d; --server-color: #ffcc00;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { background-color: var(--main-bg-color); color: var(--text-color-primary); font-family: var(--font-family); line-height: 1.6; overflow-x: hidden; }
+        h1, h2, h3 { font-weight: 700; text-shadow: 0 0 8px var(--glow-shadow); }
+        p { color: var(--text-color-secondary); }
+        a { color: var(--text-color-primary); text-decoration: none; transition: all 0.3s ease; }
+        .navbar { background-color: var(--navbar-bg-color); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 20px rgba(0,0,0,0.5); border-bottom: 1px solid rgba(66, 248, 245, 0.2); }
+        .logo { display: flex; align-items: center; gap: 15px; }
+        .logo img { height: 40px; filter: drop-shadow(0 0 10px var(--glow-shadow)); transition: transform 0.3s ease; }
+        .logo:hover img { transform: rotate(360deg); }
+        .logo h1 { font-size: 1.5rem; color: var(--accent-cyan-glow); margin: 0; }
+        .nav-links { display: flex; }
+        .nav-links a { margin: 0 15px; position: relative; padding: 5px 0; }
+        .nav-links a:hover { color: var(--accent-cyan-glow); text-shadow: 0 0 10px var(--glow-shadow); }
+        .nav-links a::after { content: ''; position: absolute; width: 0; height: 2px; display: block; margin-top: 5px; right: 50%; background: var(--accent-cyan-glow); box-shadow: 0 0 10px var(--glow-shadow); transition: all 0.3s ease; }
+        .nav-links a:hover::after { width: 100%; right: 0; }
+        .hamburger-menu { display: none; cursor: pointer; z-index: 1001; }
+        .hamburger-menu div { width: 25px; height: 3px; background-color: var(--text-color-primary); margin: 5px 0; transition: all 0.3s ease; }
+        .hamburger-menu.active .bar1 { transform: rotate(-45deg) translate(-5px, 6px); }
+        .hamburger-menu.active .bar2 { opacity: 0; }
+        .hamburger-menu.active .bar3 { transform: rotate(45deg) translate(-5px, -6px); }
+        .container { display: flex; }
+        .sidebar { width: 280px; flex-shrink: 0; background-color: var(--sidebar-bg-color); padding: 2rem 1rem; height: calc(100vh - 70px); position: sticky; top: 70px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); transition: all 0.3s ease; overflow-y: auto; }
+        .tool-list-section h4 { color: var(--accent-cyan-glow); margin-top: 1rem; margin-bottom: 0.5rem; cursor: pointer; padding-left: 8px; }
+        .tool-list { list-style: none; }
+        .tool-list li a { display: flex; align-items: center; gap: 10px; padding: 8px; margin-bottom: 5px; border-radius: 5px; transition: all 0.3s ease; font-size: 0.9rem; }
+        .tool-list li a:hover, .tool-list li a.active { background-color: rgba(66, 248, 245, 0.1); color: var(--accent-cyan-glow); box-shadow: 0 0 15px var(--glow-shadow); transform: translateX(5px); }
+        .tool-list li a.server-needed { color: var(--server-color); }
+        .main-content { flex-grow: 1; padding: 2rem; }
+        .hero-section { text-align: center; padding: 4rem 1rem; background: radial-gradient(circle, rgba(28,34,45,0.8) 0%, rgba(13,15,20,0) 70%); border-radius: 10px; margin-bottom: 3rem; }
+        .hero-section h2 { font-size: 2.5rem; }
+        .cta-button, .process-button { background-color: var(--button-bg); color: var(--accent-cyan-glow); border: 2px solid var(--accent-cyan-glow); padding: 10px 20px; font-family: var(--font-family); cursor: pointer; transition: all 0.3s ease; border-radius: 5px; font-weight: 700; text-transform: uppercase; margin-top: 1rem; }
+        .cta-button:hover, .process-button:hover { background-color: var(--accent-cyan-glow); color: var(--main-bg-color); box-shadow: 0 0 20px var(--glow-shadow); transform: scale(1.05); }
+        .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+        .tool-section-header { grid-column: 1 / -1; color: var(--accent-cyan-glow); border-bottom: 2px solid var(--accent-cyan-glow); padding-bottom: 10px; margin: 2rem 0 1rem 0; }
+        .tool-card { background-color: var(--sidebar-bg-color); padding: 1.5rem; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: all 0.3s ease; border: 1px solid transparent; display: flex; flex-direction: column; }
+        .tool-card:hover { transform: translateY(-8px); border-color: var(--accent-cyan-glow); box-shadow: 0 0 25px var(--glow-shadow); }
+        .tool-card h2 { color: var(--accent-cyan-glow); margin-top: 0; font-size: 1.2rem; }
+        .tool-card.server-needed h2 { color: var(--server-color); }
+        .tool-card.server-needed .open-tool-button { border-color: var(--server-color); color: var(--server-color); }
+        .tool-card.server-needed:hover { border-color: var(--server-color); box-shadow: 0 0 25px var(--server-color); }
+        .tool-card p { flex-grow: 1; margin: 0.5rem 0 1rem 0; }
+        .open-tool-button { background-color: var(--button-bg); color: var(--accent-cyan-glow); border: 1px solid var(--accent-cyan-glow); padding: 8px 15px; border-radius: 5px; cursor: pointer; transition: all 0.3s ease; align-self: flex-start; }
+        .open-tool-button:hover { background-color: var(--accent-cyan-glow); color: var(--main-bg-color); box-shadow: 0 0 15px var(--glow-shadow); }
+        .footer { background-color: var(--navbar-bg-color); padding: 2rem; text-align: center; margin-top: 3rem; border-top: 1px solid var(--accent-cyan-glow); box-shadow: 0 -5px 15px rgba(66, 248, 245, 0.2); }
+        .modal { display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .modal-content { background-color: var(--sidebar-bg-color); margin: 5% auto; padding: 2rem; border: 1px solid var(--accent-cyan-glow); width: 90%; max-width: 700px; border-radius: 10px; box-shadow: 0 0 30px var(--glow-shadow); animation: slideIn 0.5s ease-out; position: relative; }
+        @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .close-button { color: var(--text-color-secondary); position: absolute; top: 15px; right: 25px; font-size: 35px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; }
+        .close-button:hover { color: var(--accent-cyan-glow); text-shadow: 0 0 10px var(--glow-shadow); transform: rotate(90deg); }
+        #modalBody > div, #modalBody > textarea, #modalBody > fieldset { margin-top: 1rem; }
+        #modalBody .tool-group { margin-bottom: 1.5rem; }
+        .file-upload-area { border: 2px dashed var(--accent-cyan-glow); padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; border-radius: 10px; }
+        .file-upload-area.dragover { background-color: rgba(66, 248, 245, 0.1); border-style: solid; }
+        .processing-status { margin-top: 1rem; text-align: center; font-size: 1.1rem; min-height: 20px; }
+        .processing-status.success { color: var(--accent-cyan-glow); }
+        .processing-status.error { color: var(--error-color); }
+        #downloadButton { margin-top: 1.5rem; width: 100%; display: none; text-align: center; text-decoration: none; padding: 12px 25px; }
+        .tool-input { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid var(--accent-cyan-glow); background-color: var(--main-bg-color); color: var(--text-color-primary); font-family: var(--font-family); }
+        textarea.tool-input { min-height: 120px; resize: vertical; }
+        #qrcode-output { background-color: white; padding: 10px; margin: 1rem auto; display: inline-block; border-radius: 5px; }
+        .server-required-notice { background-color: rgba(255, 204, 0, 0.1); border: 1px solid var(--server-color); padding: 1rem; border-radius: 5px; }
+        .server-required-notice h4 { color: var(--server-color); }
+        #color-picker-output { display: flex; justify-content: space-around; margin-top: 1rem; }
+        #stopwatch-display { font-size: 2.5rem; text-align: center; margin: 1rem 0; }
+        @media (max-width: 992px) { .hamburger-menu { display: block; } .nav-links { display: none; flex-direction: column; width: 100%; position: fixed; top: 0; left: 0; height: 100vh; background-color: var(--navbar-bg-color); justify-content: center; align-items: center; transform: translateX(100%); transition: transform 0.4s ease-in-out; } .nav-links.active { display: flex; transform: translateX(0); } .sidebar { display: none; } }
+        @media (max-width: 768px) { .footer-content { flex-direction: column; gap: 1rem; } }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">
+            <img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9ImciIGN4PSI1MCUiIGN5PSI1MCUiIHI9IjUwJSIgZng9IjY1JSIgZnk9IjY1JSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzQyZjhmNSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzAwYmNmYiIvPjwvcmFkaWFsR3JhZGllbnQ+PC9kZWZzPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ4IiBzdHJva2U9InVybCgjZykiIHN0cm9rZS13aWR0aD0iNCIgZmlsbD0ibm9uZSI+PC9jaXJjbGU+PHBhdGggZD0iTTUwIDIwTDU1IDQ1IEw4MCA0NSBMNjAgNjAgTDY1IDg1IEw1MCA3MCBMMzUgODUgTDQwIDYwIEwyMCA0NSBMNDUgNDVaIiBmaWxsPSJ1cmwoI2cpIi8+PC9zdmc+' alt="Logo"/>
+            <h1>Multi Tool Hub</h1>
+        </div>
+        <nav class="nav-links">
+            <a href="#home">Home</a><a href="#tools">Tools</a>
+        </nav>
+        <div class="hamburger-menu">
+            <div class="bar1"></div><div class="bar2"></div><div class="bar3"></div>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="tool-list-section">
+                <h4>PDF Tools</h4>
+                <ul class="tool-list">
+                    <li><a href="#merge-pdf" data-tool="merge-pdf" data-name="Merge PDF">Merge PDF</a></li>
+                    <li><a href="#split-pdf" data-tool="split-pdf" data-name="Split PDF">Split PDF</a></li>
+                    <li><a href="#compress-pdf" data-tool="server-required" data-name="Compress PDF" class="server-needed">Compress PDF*</a></li>
+                    <li><a href="#organize-pdf" data-tool="organize-pdf" data-name="Organize PDF">Organize PDF</a></li>
+                    <li><a href="#rotate-pdf" data-tool="rotate-pdf" data-name="Rotate PDF">Rotate PDF</a></li>
+                    <li><a href="#unlock-pdf" data-tool="unlock-pdf" data-name="Unlock PDF">Unlock PDF</a></li>
+                    <li><a href="#protect-pdf" data-tool="protect-pdf" data-name="Protect PDF">Protect PDF</a></li>
+                    <li><a href="#add-page-numbers" data-tool="add-page-numbers" data-name="Add Page Numbers">Add Page Numbers</a></li>
+                    <li><a href="#add-watermark" data-tool="add-watermark" data-name="Add Watermark">Add Watermark</a></li>
+                    <li><a href="#pdf-to-jpg" data-tool="pdf-to-jpg" data-name="PDF to JPG">PDF to JPG</a></li>
+                    <li><a href="#edit-pdf" data-tool="server-required" data-name="Edit PDF" class="server-needed">Edit PDF*</a></li>
+                </ul>
+            </div>
+             <div class="tool-list-section">
+                <h4>Converter Tools</h4>
+                <ul class="tool-list">
+                    <li><a href="#jpg-to-pdf" data-tool="jpg-to-pdf" data-name="JPG to PDF">JPG to PDF</a></li>
+                    <li><a href="#image-converter" data-tool="image-converter" data-name="Image Converter">Image Converter</a></li>
+                    <li><a href="#pdf-to-word" data-tool="server-required" data-name="PDF to Word" class="server-needed">PDF to Word*</a></li>
+                    <li><a href="#word-to-pdf" data-tool="server-required" data-name="Word to PDF" class="server-needed">Word to PDF*</a></li>
+                    <li><a href="#pdf-to-powerpoint" data-tool="server-required" data-name="PDF to PowerPoint" class="server-needed">PDF to PowerPoint*</a></li>
+                    <li><a href="#powerpoint-to-pdf" data-tool="server-required" data-name="PowerPoint to PDF" class="server-needed">PowerPoint to PDF*</a></li>
+                    <li><a href="#pdf-to-excel" data-tool="server-required" data-name="PDF to Excel" class="server-needed">PDF to Excel*</a></li>
+                    <li><a href="#excel-to-pdf" data-tool="server-required" data-name="Excel to PDF" class="server-needed">Excel to PDF*</a></li>
+                    <li><a href="#audio-converter" data-tool="server-required" data-name="Audio Converter" class="server-needed">Audio Converter*</a></li>
+                    <li><a href="#video-compressor" data-tool="server-required" data-name="Video Compressor" class="server-needed">Video Compressor*</a></li>
+                </ul>
+            </div>
+             <div class="tool-list-section">
+                <h4>Image Tools</h4>
+                <ul class="tool-list">
+                    <li><a href="#image-compressor" data-tool="image-compressor" data-name="Image Compressor">Image Compressor</a></li>
+                </ul>
+            </div>
+            <div class="tool-list-section">
+                <h4>Text & Content Tools</h4>
+                <ul class="tool-list">
+                    <li><a href="#word-counter" data-tool="word-counter" data-name="Word & Character Counter">Word Counter</a></li>
+                    <li><a href="#json-formatter" data-tool="json-formatter" data-name="JSON Formatter">JSON Formatter</a></li>
+                    <li><a href="#text-to-speech" data-tool="text-to-speech" data-name="Text to Speech">Text to Speech</a></li>
+                    <li><a href="#speech-to-text" data-tool="speech-to-text" data-name="Speech to Text">Speech to Text</a></li>
+                </ul>
+            </div>
+             <div class="tool-list-section">
+                <h4>Calculators & Utilities</h4>
+                <ul class="tool-list">
+                    <li><a href="#qr-generator" data-tool="qr-generator" data-name="QR Code Generator">QR Code Generator</a></li>
+                    <li><a href="#pw-generator" data-tool="pw-generator" data-name="Password Generator">Password Generator</a></li>
+                    <li><a href="#age-calculator" data-tool="age-calculator" data-name="Age Calculator">Age Calculator</a></li>
+                    <li><a href="#bmi-calculator" data-tool="bmi-calculator" data-name="BMI Calculator">BMI Calculator</a></li>
+                    <li><a href="#color-picker" data-tool="color-picker" data-name="Color Picker">Color Picker</a></li>
+                    <li><a href="#unit-converter" data-tool="unit-converter" data-name="Unit Converter">Unit Converter</a></li>
+                    <li><a href="#timer-stopwatch" data-tool="timer-stopwatch" data-name="Timer / Stopwatch">Timer / Stopwatch</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="main-content" id="tools">
+             <section id="home" class="hero-section">
+                <h2>The Future of Online Tools is Here</h2>
+                <p>A collection of client-side utilities. No uploads, instant results. Your privacy is guaranteed.<br><small style="color: var(--server-color);">*Tools marked with an asterisk require server processing and are for UI demonstration only.</small></p>
+            </section>
+            
+            <h3 class="tool-section-header" id="pdf-tools">PDF Tools</h3>
+            <div class="tools-grid">
+                <div class="tool-card" id="merge-pdf"><h2>Merge PDF</h2><p>Combine multiple PDFs into one.</p><button class="open-tool-button" data-tool="merge-pdf" data-name="Merge PDF">Open</button></div>
+                <div class="tool-card" id="split-pdf"><h2>Split PDF</h2><p>Extract pages or ranges from a PDF.</p><button class="open-tool-button" data-tool="split-pdf" data-name="Split PDF">Open</button></div>
+                <div class="tool-card server-needed" id="compress-pdf"><h2>Compress PDF*</h2><p>Reduce the file size of your PDF.</p><button class="open-tool-button" data-tool="server-required" data-name="Compress PDF">Open</button></div>
+                <div class="tool-card" id="organize-pdf"><h2>Organize PDF</h2><p>Reorder, rotate, or delete pages.</p><button class="open-tool-button" data-tool="organize-pdf" data-name="Organize PDF">Open</button></div>
+                <div class="tool-card" id="rotate-pdf"><h2>Rotate PDF</h2><p>Rotate all pages in a PDF document.</p><button class="open-tool-button" data-tool="rotate-pdf" data-name="Rotate PDF">Open</button></div>
+                <div class="tool-card" id="unlock-pdf"><h2>Unlock PDF</h2><p>Remove basic password restrictions.</p><button class="open-tool-button" data-tool="unlock-pdf" data-name="Unlock PDF">Open</button></div>
+                <div class="tool-card" id="protect-pdf"><h2>Protect PDF</h2><p>Add a password to encrypt a PDF.</p><button class="open-tool-button" data-tool="protect-pdf" data-name="Protect PDF">Open</button></div>
+                <div class="tool-card" id="add-page-numbers"><h2>Add Page Numbers</h2><p>Stamp page numbers onto your PDF.</p><button class="open-tool-button" data-tool="add-page-numbers" data-name="Add Page Numbers">Open</button></div>
+                <div class="tool-card" id="add-watermark"><h2>Add Watermark</h2><p>Add a text watermark to a PDF.</p><button class="open-tool-button" data-tool="add-watermark" data-name="Add Watermark">Open</button></div>
+                <div class="tool-card" id="pdf-to-jpg"><h2>PDF to JPG</h2><p>Convert each page of a PDF to a JPG image.</p><button class="open-tool-button" data-tool="pdf-to-jpg" data-name="PDF to JPG">Open</button></div>
+                <div class="tool-card server-needed" id="edit-pdf"><h2>Edit PDF*</h2><p>Add text and images to a PDF.</p><button class="open-tool-button" data-tool="server-required" data-name="Edit PDF">Open</button></div>
+            </div>
+
+            <h3 class="tool-section-header" id="converter-tools">Converter Tools</h3>
+            <div class="tools-grid">
+                <div class="tool-card" id="jpg-to-pdf"><h2>JPG to PDF</h2><p>Convert JPG images into a single PDF.</p><button class="open-tool-button" data-tool="jpg-to-pdf" data-name="JPG to PDF">Open</button></div>
+                <div class="tool-card" id="image-converter"><h2>Image Converter</h2><p>Convert between PNG, JPG, and WEBP.</p><button class="open-tool-button" data-tool="image-converter" data-name="Image Converter">Open</button></div>
+                <div class="tool-card server-needed" id="pdf-to-word"><h2>PDF to Word*</h2><p>Convert PDF to editable DOCX files.</p><button class="open-tool-button" data-tool="server-required" data-name="PDF to Word">Open</button></div>
+                <div class="tool-card server-needed" id="word-to-pdf"><h2>Word to PDF*</h2><p>Convert DOCX files to PDF.</p><button class="open-tool-button" data-tool="server-required" data-name="Word to PDF">Open</button></div>
+                <div class="tool-card server-needed" id="pdf-to-powerpoint"><h2>PDF to PowerPoint*</h2><p>Convert PDF to PPTX presentations.</p><button class="open-tool-button" data-tool="server-required" data-name="PDF to PowerPoint">Open</button></div>
+                <div class="tool-card server-needed" id="powerpoint-to-pdf"><h2>PowerPoint to PDF*</h2><p>Convert PPTX files to PDF.</p><button class="open-tool-button" data-tool="server-required" data-name="PowerPoint to PDF">Open</button></div>
+                <div class="tool-card server-needed" id="pdf-to-excel"><h2>PDF to Excel*</h2><p>Extract data from PDF to Excel.</p><button class="open-tool-button" data-tool="server-required" data-name="PDF to Excel">Open</button></div>
+                <div class="tool-card server-needed" id="excel-to-pdf"><h2>Excel to PDF*</h2><p>Convert XLS files to PDF.</p><button class="open-tool-button" data-tool="server-required" data-name="Excel to PDF">Open</button></div>
+                <div class="tool-card server-needed" id="audio-converter"><h2>Audio Converter*</h2><p>Convert between various audio formats.</p><button class="open-tool-button" data-tool="server-required" data-name="Audio Converter">Open</button></div>
+                <div class="tool-card server-needed" id="video-compressor"><h2>Video Compressor*</h2><p>Reduce video file size.</p><button class="open-tool-button" data-tool="server-required" data-name="Video Compressor">Open</button></div>
+            </div>
+
+            <h3 class="tool-section-header" id="image-tools">Image Tools</h3>
+            <div class="tools-grid">
+                <div class="tool-card" id="image-compressor"><h2>Image Compressor</h2><p>Reduce image file size without quality loss.</p><button class="open-tool-button" data-tool="image-compressor" data-name="Image Compressor">Open</button></div>
+            </div>
+
+            <h3 class="tool-section-header" id="text-content-tools">Text & Content Tools</h3>
+            <div class="tools-grid">
+                <div class="tool-card" id="word-counter"><h2>Word & Character Counter</h2><p>Count words and characters in your text.</p><button class="open-tool-button" data-tool="word-counter" data-name="Word & Character Counter">Open</button></div>
+                <div class="tool-card" id="json-formatter"><h2>JSON Formatter</h2><p>Format and validate JSON data.</p><button class="open-tool-button" data-tool="json-formatter" data-name="JSON Formatter">Open</button></div>
+                <div class="tool-card" id="text-to-speech"><h2>Text to Speech</h2><p>Convert text into spoken audio.</p><button class="open-tool-button" data-tool="text-to-speech" data-name="Text to Speech">Open</button></div>
+                <div class="tool-card" id="speech-to-text"><h2>Speech to Text</h2><p>Transcribe spoken words into text.</p><button class="open-tool-button" data-tool="speech-to-text" data-name="Speech to Text">Open</button></div>
+            </div>
+
+            <h3 class="tool-section-header" id="calculators-utilities">Calculators & Utilities</h3>
+            <div class="tools-grid">
+                <div class="tool-card" id="qr-generator"><h2>QR Code Generator</h2><p>Create QR codes for URLs and text.</p><button class="open-tool-button" data-tool="qr-generator" data-name="QR Code Generator">Open</button></div>
+                <div class="tool-card" id="pw-generator"><h2>Password Generator</h2><p>Generate strong, secure passwords.</p><button class="open-tool-button" data-tool="pw-generator" data-name="Password Generator">Open</button></div>
+                <div class="tool-card" id="age-calculator"><h2>Age Calculator</h2><p>Calculate age from date of birth.</p><button class="open-tool-button" data-tool="age-calculator" data-name="Age Calculator">Open</button></div>
+                <div class="tool-card" id="bmi-calculator"><h2>BMI Calculator</h2><p>Calculate your Body Mass Index.</p><button class="open-tool-button" data-tool="bmi-calculator" data-name="BMI Calculator">Open</button></div>
+                <div class="tool-card" id="color-picker"><h2>Color Picker</h2><p>Pick a color and get its codes (Hex, RGB).</p><button class="open-tool-button" data-tool="color-picker" data-name="Color Picker">Open</button></div>
+                <div class="tool-card" id="unit-converter"><h2>Unit Converter</h2><p>Convert between common units.</p><button class="open-tool-button" data-tool="unit-converter" data-name="Unit Converter">Open</button></div>
+                <div class="tool-card" id="timer-stopwatch"><h2>Timer / Stopwatch</h2><p>A simple timer and stopwatch utility.</p><button class="open-tool-button" data-tool="timer-stopwatch" data-name="Timer / Stopwatch">Open</button></div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+         <p>&copy; 2025 Multi Tool Hub. All tools run in your browser for 100% privacy.</p>
+    </footer>
+
+    <div id="toolModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2 id="modalTitle">Tool</h2>
+            <div id="modalBody"></div>
+            <div class="processing-status"></div>
+            <a id="downloadButton" class="cta-button">Download Result</a>
+        </div>
+    </div>
+    
+    <script>
+    // --- SCRIPT START --- //
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- GLOBAL LIBS & VARS ---
+        const { PDFDocument, rgb, degrees, StandardFonts } = PDFLib;
+        
+        let uploadedFiles = [];
+        let stopwatchInterval;
+        let stopwatchState = {
+            startTime: 0,
+            elapsedTime: 0,
+            running: false
+        };
+        let speechRecognition;
+
+        // --- CORE UI & MODAL LOGIC ---
+        const modal = document.getElementById('toolModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const statusDiv = modal.querySelector('.processing-status');
+        const downloadBtn = document.getElementById('downloadButton');
+
+        const openToolModal = (toolId, toolName) => {
+            modalTitle.textContent = toolName;
+            statusDiv.className = 'processing-status';
+            statusDiv.textContent = '';
+            downloadBtn.style.display = 'none';
+            downloadBtn.removeAttribute('href');
+            uploadedFiles = [];
+            
+            if (stopwatchInterval) clearInterval(stopwatchInterval);
+            if (speechRecognition && speechRecognition.recognizing) speechRecognition.stop();
+
+            modalBody.innerHTML = generateToolUI(toolId);
+            attachToolEventListeners(toolId);
+            modal.style.display = 'block';
+        };
+
+        document.body.addEventListener('click', e => {
+            const toolTrigger = e.target.closest('[data-tool]');
+            if (toolTrigger) {
+                e.preventDefault();
+                const toolId = toolTrigger.getAttribute('data-tool');
+                const toolName = toolTrigger.getAttribute('data-name');
+                openToolModal(toolId, toolName);
+            }
+        });
+        
+        const closeModal = () => { modal.style.display = 'none'; };
+        modal.querySelector('.close-button').addEventListener('click', closeModal);
+        window.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+        
+        // --- TOOL UI GENERATION & EVENT HANDLING ---
+        function generateToolUI(toolId) {
+            switch(toolId) {
+                // PDF Tools
+                case 'merge-pdf': return `<div class="file-upload-area"><p>Drop PDF files here or click</p><input type="file" id="file-input" multiple accept=".pdf"></div><button class="process-button" style="display: none;">Merge PDFs</button>`;
+                case 'split-pdf': return `<div class="file-upload-area"><p>Drop a single PDF here</p><input type="file" id="file-input" accept=".pdf"></div><div class="tool-group"><p>Pages to extract (e.g., 1, 3-5, 8):</p><input type="text" id="page-ranges" class="tool-input" placeholder="e.g., 1, 3-5, 8"></div><button class="process-button" style="display: none;">Split PDF</button>`;
+                case 'organize-pdf': return `<div class="file-upload-area"><p>Drop a single PDF here</p><input type="file" id="file-input" accept=".pdf"></div><div class="tool-group"><p>New page order (e.g., 3,1,2,4):</p><input type="text" id="page-order" class="tool-input" placeholder="e.g., 3,1,2,4"></div><button class="process-button" style="display: none;">Re-order PDF</button>`;
+                case 'rotate-pdf': return `<div class="file-upload-area"><p>Drop a single PDF here</p><input type="file" id="file-input" accept=".pdf"></div><div class="tool-group">Rotation: <input type="number" id="rotation-angle" class="tool-input" value="90" step="90"> degrees</div><button class="process-button" style="display: none;">Rotate PDF</button>`;
+                case 'add-page-numbers': return `<div class="file-upload-area"><p>Drop a single PDF here</p><input type="file" id="file-input" accept=".pdf"></div><div class="tool-group"><p>Position:</p><select id="pn-position" class="tool-input"><option value="bottom-center">Bottom Center</option><option value="bottom-right">Bottom Right</option><option value="top-center">Top Center</option><option value="top-right">Top Right</option></select></div><button class="process-button" style="display: none;">Add Numbers</button>`;
+                case 'add-watermark': return `<div class="file-upload-area"><p>Drop a single PDF here</p><input type="file" id="file-input" accept=".pdf"></div><div class="tool-group">Watermark Text: <input type="text" id="watermark-text" class="tool-input" value="CONFIDENTIAL"></div><button class="process-button" style="display: none;">Add Watermark</button>`;
+                case 'protect-pdf': return `<div class="file-upload-area"><p>Drop a single PDF here</p><input type="file" id="file-input" accept=".pdf"></div><div class="tool-group">Password: <input type="password" id="pdf-password" class="tool-input" placeholder="Enter password"></div><button class="process-button" style="display: none;">Protect PDF</button>`;
+                case 'unlock-pdf': return `<div class="file-upload-area"><p>Drop a password-protected PDF</p><input type="file" id="file-input" accept=".pdf"></div><div class="tool-group">Password (if needed to open): <input type="password" id="pdf-password" class="tool-input" placeholder="Enter password to open"></div><button class="process-button" style="display: none;">Unlock PDF</button>`;
+                case 'pdf-to-jpg': return `<div class="file-upload-area"><p>Drop a single PDF here</p><input type="file" id="file-input" accept=".pdf"></div><button class="process-button" style="display: none;">Convert to JPG</button>`;
+                
+                // Converter Tools
+                case 'jpg-to-pdf': return `<div class="file-upload-area"><p>Drop JPG/PNG files here or click</p><input type="file" id="file-input" multiple accept="image/jpeg,image/png"></div><button class="process-button" style="display: none;">Convert to PDF</button>`;
+                case 'image-converter': return `<div class="file-upload-area"><p>Drop an image here</p><input type="file" id="file-input" accept="image/*"></div><div class="tool-group">Convert to: <select id="image-format" class="tool-input"><option value="image/jpeg">JPG</option><option value="image/png">PNG</option><option value="image/webp">WEBP</option></select></div><button class="process-button" style="display: none;">Convert Image</button>`;
+                
+                // Image Tools
+                case 'image-compressor': return `<div class="file-upload-area"><p>Drop an image here</p><input type="file" id="file-input" accept="image/jpeg,image/png"></div><div class="tool-group">Quality (0.1-1.0): <input type="range" id="image-quality" class="tool-input" min="0.1" max="1.0" step="0.1" value="0.7"></div><button class="process-button" style="display: none;">Compress Image</button>`;
+                
+                // Text & Content Tools
+                case 'word-counter': return `<textarea class="tool-input" id="wc-text" placeholder="Paste your text here..."></textarea><div id="wc-output" style="margin-top: 1rem;">Words: 0, Characters: 0</div>`;
+                case 'json-formatter': return `<textarea class="tool-input" id="json-input" placeholder="Paste your JSON here..."></textarea><button class="process-button">Format JSON</button>`;
+                case 'text-to-speech': return `<textarea class="tool-input" id="tts-text" placeholder="Type text to speak..."></textarea><button class="process-button">Speak</button>`;
+                case 'speech-to-text': return `<textarea class="tool-input" id="stt-output" placeholder="Click 'Start Listening' and speak..."></textarea><button class="process-button" id="stt-btn">Start Listening</button>`;
+
+                // Calculators & Utilities
+                case 'qr-generator': return `<div class="tool-group"><p>Enter text or URL:</p><input type="text" id="qr-text" class="tool-input" placeholder="https://example.com"></div><button class="process-button">Generate QR</button><div id="qrcode-output" style="text-align: center;"></div>`;
+                case 'pw-generator': return `<div class="tool-group"><p>Password Length:</p><input type="number" id="pw-length" class="tool-input" value="16" min="4" max="128"></div><button class="process-button">Generate Password</button><input type="text" id="pw-output" class="tool-input" readonly style="margin-top: 1rem;">`;
+                case 'age-calculator': return `<div class="tool-group"><p>Enter your Date of Birth:</p><input type="date" id="dob-input" class="tool-input"></div><button class="process-button">Calculate Age</button><div id="age-output" style="margin-top: 1rem; font-size: 1.2rem;"></div>`;
+                case 'bmi-calculator': return `<fieldset class="tool-input" style="border-width:1px;"><legend>Units</legend><label><input type="radio" name="bmi-units" value="metric" checked> Metric (kg, cm)</label> <label><input type="radio" name="bmi-units" value="imperial"> Imperial (lbs, in)</label></fieldset><div class="tool-group"><p id="weight-label">Weight (kg):</p><input type="number" id="bmi-weight" class="tool-input"></div><div class="tool-group"><p id="height-label">Height (cm):</p><input type="number" id="bmi-height" class="tool-input"></div><button class="process-button">Calculate BMI</button><div id="bmi-output" style="margin-top: 1rem; font-size: 1.2rem;"></div>`;
+                case 'color-picker': return `<div class="tool-group"><p>Select a color:</p><input type="color" id="color-input" class="tool-input" value="#42f8f5" style="height: 50px;"></div><div id="color-picker-output"></div>`;
+                case 'unit-converter': return `<div class="tool-group"><p>Category:</p><select id="uc-category" class="tool-input"></select></div><div style="display: flex; gap: 1rem; align-items: center;"><div class="tool-group" style="flex:1;"><input type="number" id="uc-input" class="tool-input" placeholder="Input"> <select id="uc-from" class="tool-input"></select></div><div>=</div><div class="tool-group" style="flex:1;"><input type="text" id="uc-output" class="tool-input" readonly placeholder="Output"> <select id="uc-to" class="tool-input"></select></div></div>`;
+                case 'timer-stopwatch': return `<div id="stopwatch-display">00:00:00.000</div><div style="display:flex; gap: 1rem; justify-content:center;"><button class="process-button" id="sw-start-stop">Start</button><button class="process-button" id="sw-reset">Reset</button></div>`;
+                
+                // Server-required tools
+                case 'server-required': return `<div class="server-required-notice"><h4>Backend Server Required</h4><p>This tool performs complex operations that cannot be done securely and efficiently in your browser. This requires powerful server-side processing. This is a demonstration of the UI only.</p></div>`;
+                default: return `<p>This tool is under construction.</p>`;
+            }
+        }
+
+        function attachToolEventListeners(toolId) {
+            const fileInput = modal.querySelector('#file-input');
+            const processBtn = modal.querySelector('.process-button');
+            if (fileInput) { // For file-based tools
+                const uploadArea = modal.querySelector('.file-upload-area');
+                uploadArea.onclick = () => fileInput.click();
+                fileInput.onchange = e => {
+                    uploadedFiles = Array.from(e.target.files);
+                    if (uploadedFiles.length > 0 && processBtn) processBtn.style.display = 'block';
+                };
+            }
+            if (processBtn && !['stt-btn', 'sw-start-stop', 'sw-reset'].includes(processBtn.id)) {
+                 processBtn.onclick = () => runTool(toolId);
+            }
+            
+            const handlers = {
+                'word-counter': () => modal.querySelector('#wc-text').oninput = () => runTool(toolId),
+                'bmi-calculator': () => modal.querySelectorAll('input[name="bmi-units"]').forEach(radio => radio.onchange = () => runTool(toolId, 'unit-change')),
+                'color-picker': () => { const cp = modal.querySelector('#color-input'); cp.oninput = () => runTool(toolId); runTool(toolId); },
+                'unit-converter': () => {
+                    modal.querySelector('#uc-category').onchange = () => runTool(toolId, 'init');
+                    modal.querySelector('#uc-input').oninput = () => runTool(toolId, 'convert');
+                    modal.querySelector('#uc-from').onchange = () => runTool(toolId, 'convert');
+                    modal.querySelector('#uc-to').onchange = () => runTool(toolId, 'convert');
+                    runTool(toolId, 'init');
+                },
+                'speech-to-text': () => modal.querySelector('#stt-btn').onclick = () => runTool(toolId),
+                'timer-stopwatch': () => {
+                    modal.querySelector('#sw-start-stop').onclick = () => runTool(toolId, 'start-stop');
+                    modal.querySelector('#sw-reset').onclick = () => runTool(toolId, 'reset');
+                }
+            };
+            if(handlers[toolId]) handlers[toolId]();
+        }
+
+        // --- MASTER TOOL RUNNER ---
+        async function runTool(toolId, action = null) {
+            statusDiv.className = 'processing-status';
+            if(!['word-counter', 'timer-stopwatch', 'color-picker', 'unit-converter', 'speech-to-text'].includes(toolId)) {
+                statusDiv.textContent = 'Processing...';
+                downloadBtn.style.display = 'none';
+            } else {
+                 statusDiv.textContent = '';
+            }
+
+            try {
+                const toolFunctions = {
+                    'merge-pdf': mergePdfTool, 'split-pdf': splitPdfTool, 'organize-pdf': organizePdfTool,
+                    'rotate-pdf': rotatePdfTool, 'add-page-numbers': addPageNumbersTool, 'add-watermark': addWatermarkTool,
+                    'protect-pdf': protectPdfTool, 'unlock-pdf': unlockPdfTool, 'pdf-to-jpg': pdfToJpgTool,
+                    'jpg-to-pdf': imageToPdfTool, 'image-converter': convertImageTool, 'image-compressor': convertImageTool,
+                    'word-counter': wordCounterTool, 'json-formatter': jsonFormatterTool, 'text-to-speech': textToSpeechTool,
+                    'speech-to-text': speechToTextTool,
+                    'qr-generator': qrGeneratorTool, 'pw-generator': passwordGeneratorTool, 'age-calculator': ageCalculatorTool,
+                    'bmi-calculator': bmiCalculatorTool, 'color-picker': colorPickerTool, 'unit-converter': unitConverterTool,
+                    'timer-stopwatch': stopwatchTool,
+                };
+                if(toolFunctions[toolId]) await toolFunctions[toolId](toolId, action);
+            } catch (error) {
+                statusDiv.className = 'processing-status error';
+                statusDiv.textContent = `Error: ${error.message}`;
+                console.error(error);
+            }
+        }
+
+        // --- HELPER FUNCTIONS ---
+        const displayDownload = (blob, filename) => {
+            const url = URL.createObjectURL(blob);
+            downloadBtn.href = url; downloadBtn.download = filename;
+            downloadBtn.style.display = 'block';
+            statusDiv.className = 'processing-status success';
+            statusDiv.textContent = '✅ Success! Your file is ready.';
+        };
+        const requireSingleFile = () => { if (uploadedFiles.length !== 1) throw new Error("Please select a single file."); };
+        const requireFiles = (min = 1) => { if (uploadedFiles.length < min) throw new Error(`Please select at least ${min} file(s).`); };
+
+        // --- PDF TOOL IMPLEMENTATIONS ---
+        async function mergePdfTool() {
+            requireFiles(2);
+            const mergedPdf = await PDFDocument.create();
+            for (const file of uploadedFiles) {
+                const pdfBytes = await file.arrayBuffer();
+                const pdf = await PDFDocument.load(pdfBytes);
+                const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                copiedPages.forEach(page => mergedPdf.addPage(page));
+            }
+            displayDownload(new Blob([await mergedPdf.save()], { type: 'application/pdf' }), 'merged.pdf');
+        }
+
+        async function splitPdfTool() {
+            requireSingleFile();
+            const ranges = modal.querySelector('#page-ranges').value;
+            if(!ranges) throw new Error("Please enter page ranges to extract.");
+            const pdfDoc = await PDFDocument.load(await uploadedFiles[0].arrayBuffer());
+            const indices = [];
+            ranges.split(',').forEach(range => {
+                range = range.trim();
+                if (range.includes('-')) {
+                    const [start, end] = range.split('-').map(n => parseInt(n.trim()));
+                    if(isNaN(start) || isNaN(end)) return;
+                    for (let i = start; i <= end; i++) indices.push(i - 1);
+                } else {
+                    if(isNaN(parseInt(range))) return;
+                    indices.push(parseInt(range) - 1);
+                }
+            });
+            const validIndices = indices.filter(i => i >= 0 && i < pdfDoc.getPageCount());
+            if(validIndices.length === 0) throw new Error("Page numbers are invalid or out of range.");
+            const subDoc = await PDFDocument.create();
+            const copiedPages = await subDoc.copyPages(pdfDoc, validIndices);
+            copiedPages.forEach(page => subDoc.addPage(page));
+            displayDownload(new Blob([await subDoc.save()], { type: 'application/pdf' }), 'split.pdf');
+        }
+
+        async function organizePdfTool() {
+            requireSingleFile();
+            const orderStr = modal.querySelector('#page-order').value;
+            if(!orderStr) throw new Error("Please enter the new page order.");
+            const pdfDoc = await PDFDocument.load(await uploadedFiles[0].arrayBuffer());
+            const order = orderStr.split(',').map(n => parseInt(n.trim()) - 1);
+            const validOrder = order.filter(i => i >= 0 && i < pdfDoc.getPageCount());
+            if(validOrder.length !== pdfDoc.getPageCount() || new Set(validOrder).size !== validOrder.length) {
+                throw new Error("Invalid page order. Ensure all pages are listed once and are within range.");
+            }
+            const newDoc = await PDFDocument.create();
+            const copiedPages = await newDoc.copyPages(pdfDoc, validOrder);
+            copiedPages.forEach(page => newDoc.addPage(page));
+            displayDownload(new Blob([await newDoc.save()], { type: 'application/pdf' }), 'reordered.pdf');
+        }
+
+        async function rotatePdfTool() {
+            requireSingleFile();
+            const angle = parseInt(modal.querySelector('#rotation-angle').value, 10);
+            const pdfDoc = await PDFDocument.load(await uploadedFiles[0].arrayBuffer());
+            pdfDoc.getPages().forEach(page => page.setRotation(degrees(page.getRotation().angle + angle)));
+            displayDownload(new Blob([await pdfDoc.save()], { type: 'application/pdf' }), 'rotated.pdf');
+        }
+
+        async function protectPdfTool() {
+            requireSingleFile();
+            const pass = modal.querySelector('#pdf-password').value;
+            if (!pass) throw new Error("Please enter a password.");
+            const pdfDoc = await PDFDocument.load(await uploadedFiles[0].arrayBuffer());
+            displayDownload(new Blob([await pdfDoc.save({ userPassword: pass, ownerPassword: pass })]), 'protected.pdf');
+        }
+
+        async function unlockPdfTool() {
+            requireSingleFile();
+            const password = modal.querySelector('#pdf-password').value;
+            try {
+                const pdfDoc = await PDFDocument.load(await uploadedFiles[0].arrayBuffer(), { password });
+                displayDownload(new Blob([await pdfDoc.save()]), 'unlocked.pdf');
+            } catch (e) {
+                if(e.message.includes("password")) throw new Error("Incorrect password or encrypted file.");
+                throw e;
+            }
+        }
+
+        async function addWatermarkTool() {
+            requireSingleFile();
+            const text = modal.querySelector('#watermark-text').value;
+            if(!text) throw new Error("Please enter watermark text.");
+            const pdfDoc = await PDFDocument.load(await uploadedFiles[0].arrayBuffer());
+            const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            for (const page of pdfDoc.getPages()) {
+                const { width, height } = page.getSize();
+                page.drawText(text, { x: 60, y: height / 2, font: helveticaFont, size: 50, color: rgb(0.9, 0.2, 0.2), opacity: 0.2, rotate: degrees(45) });
+            }
+            displayDownload(new Blob([await pdfDoc.save()], { type: 'application/pdf' }), 'watermarked.pdf');
+        }
+        
+        async function addPageNumbersTool() {
+            requireSingleFile();
+            const position = modal.querySelector('#pn-position').value;
+            const pdfDoc = await PDFDocument.load(await uploadedFiles[0].arrayBuffer());
+            const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            const pages = pdfDoc.getPages();
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                const { width, height } = page.getSize();
+                let x, y;
+                const margin = 40;
+                const size = 12;
+                const text = `${i + 1} / ${pages.length}`;
+                const textWidth = helveticaFont.widthOfTextAtSize(text, size);
+                switch(position) {
+                    case 'bottom-right': x = width - margin - textWidth; y = margin; break;
+                    case 'top-center': x = width / 2 - textWidth / 2; y = height - margin; break;
+                    case 'top-right': x = width - margin - textWidth; y = height - margin; break;
+                    default: x = width / 2 - textWidth / 2; y = margin; // bottom-center
+                }
+                page.drawText(text, { x, y, font: helveticaFont, size, color: rgb(0, 0, 0) });
+            }
+            displayDownload(new Blob([await pdfDoc.save()]), 'paginated.pdf');
+        }
+
+        async function pdfToJpgTool() {
+            requireSingleFile();
+            const arrayBuffer = await uploadedFiles[0].arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+            const zip = new JSZip();
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                statusDiv.textContent = `Processing page ${i} of ${pdf.numPages}...`;
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 2.0 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+                zip.file(`page_${i}.jpg`, blob);
+            }
+            const zipBlob = await zip.generateAsync({type:"blob"});
+            displayDownload(zipBlob, 'converted_images.zip');
+        }
+
+        // --- CONVERTER & IMAGE IMPLEMENTATIONS ---
+        async function imageToPdfTool() {
+            requireFiles(1);
+            const pdfDoc = await PDFDocument.create();
+            for (const file of uploadedFiles) {
+                const page = pdfDoc.addPage();
+                const imageBytes = await file.arrayBuffer();
+                let image;
+                if (file.type === 'image/png') {
+                    image = await pdfDoc.embedPng(imageBytes);
+                } else if (file.type === 'image/jpeg') {
+                    image = await pdfDoc.embedJpg(imageBytes);
+                } else {
+                    throw new Error(`Unsupported image type: ${file.type}. Please use JPG or PNG.`);
+                }
+                const { width, height } = image.scale(1);
+                page.setSize(width, height);
+                page.drawImage(image, { x: 0, y: 0, width, height });
+            }
+            displayDownload(new Blob([await pdfDoc.save()], { type: 'application/pdf' }), 'converted.pdf');
+        }
+
+        async function convertImageTool(toolId) {
+            requireSingleFile();
+            const isCompressor = toolId === 'image-compressor';
+            const format = isCompressor ? 'image/jpeg' : modal.querySelector('#image-format').value;
+            const quality = isCompressor ? parseFloat(modal.querySelector('#image-quality').value) : 0.9;
+            
+            const imageBitmap = await createImageBitmap(uploadedFiles[0]);
+            const canvas = document.createElement('canvas');
+            canvas.width = imageBitmap.width; canvas.height = imageBitmap.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(imageBitmap, 0, 0);
+            
+            canvas.toBlob(blob => {
+                const extension = format.split('/')[1];
+                displayDownload(blob, `converted.${extension}`);
+            }, format, quality);
+        }
+
+        // --- UTILITY & OTHER IMPLEMENTATIONS ---
+        async function qrGeneratorTool() {
+            const text = modal.querySelector('#qr-text').value;
+            if (!text) throw new Error("Input text is empty.");
+            const outputDiv = modal.querySelector('#qrcode-output');
+            outputDiv.innerHTML = '';
+            new QRCode(outputDiv, { text, width: 128, height: 128 });
+            statusDiv.className = 'processing-status success'; statusDiv.textContent = '✅ QR Code Generated!';
+        }
+
+        async function passwordGeneratorTool() {
+            const length = parseInt(modal.querySelector('#pw-length').value, 10);
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
+            let password = "";
+            const buffer = new Uint8Array(length);
+            window.crypto.getRandomValues(buffer);
+            for (let i = 0; i < length; i++) {
+                password += charset.charAt(buffer[i] % charset.length);
+            }
+            modal.querySelector('#pw-output').value = password;
+            statusDiv.className = 'processing-status success'; statusDiv.textContent = '✅ New Password Generated!';
+        }
+        
+        async function wordCounterTool() {
+            const text = modal.querySelector('#wc-text').value;
+            const words = text.match(/\b\w+\b/g) || [];
+            modal.querySelector('#wc-output').textContent = `Words: ${words.length}, Characters: ${text.length}`;
+        }
+        
+        async function jsonFormatterTool() {
+            const input = modal.querySelector('#json-input');
+            try {
+                const formatted = JSON.stringify(JSON.parse(input.value), null, 4);
+                input.value = formatted;
+                statusDiv.className = 'processing-status success'; statusDiv.textContent = '✅ JSON Formatted Successfully!';
+            } catch (e) {
+                throw new Error("Invalid JSON data.");
+            }
+        }
+        
+        async function textToSpeechTool() {
+            const text = modal.querySelector('#tts-text').value;
+            if(!text) throw new Error("No text to speak.");
+            window.speechSynthesis.cancel(); // Cancel any previous speech
+            const utterance = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.speak(utterance);
+            statusDiv.className = 'processing-status success'; statusDiv.textContent = 'Speaking...';
+        }
+
+        async function speechToTextTool() {
+            const outputArea = modal.querySelector('#stt-output');
+            const sttBtn = modal.querySelector('#stt-btn');
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                throw new Error("Speech Recognition API not supported in this browser.");
+            }
+            
+            if (!speechRecognition || !speechRecognition.recognizing) {
+                speechRecognition = new SpeechRecognition();
+                speechRecognition.continuous = true;
+                speechRecognition.interimResults = true;
+                speechRecognition.recognizing = false;
+                
+                speechRecognition.onstart = () => {
+                    speechRecognition.recognizing = true;
+                    sttBtn.textContent = 'Stop Listening';
+                    statusDiv.textContent = 'Listening...';
+                };
+                speechRecognition.onerror = (event) => {
+                     statusDiv.className = 'processing-status error';
+                     statusDiv.textContent = `Error: ${event.error}`;
+                };
+                speechRecognition.onend = () => {
+                    speechRecognition.recognizing = false;
+                    sttBtn.textContent = 'Start Listening';
+                    statusDiv.textContent = '';
+                };
+                
+                speechRecognition.onresult = (event) => {
+                    let final_transcript = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            final_transcript += event.results[i][0].transcript;
+                        }
+                    }
+                    if(final_transcript) outputArea.value += (outputArea.value.length ? ' ' : '') + final_transcript;
+                };
+                
+                speechRecognition.start();
+            } else {
+                speechRecognition.stop();
+            }
+        }
+        
+        async function ageCalculatorTool() {
+            const dob = modal.querySelector('#dob-input').value;
+            if(!dob) throw new Error("Please select a date of birth.");
+            const birthDate = new Date(dob);
+            const today = new Date();
+            let years = today.getFullYear() - birthDate.getFullYear();
+            let months = today.getMonth() - birthDate.getMonth();
+            let days = today.getDate() - birthDate.getDate();
+            if(days < 0) { months--; days += new Date(today.getFullYear(), today.getMonth(), 0).getDate(); }
+            if(months < 0) { years--; months += 12; }
+            modal.querySelector('#age-output').textContent = `You are ${years} years, ${months} months, and ${days} days old.`;
+            statusDiv.className = 'processing-status success'; statusDiv.textContent = "Calculated!";
+        }
+
+        async function bmiCalculatorTool(toolId, action) {
+            const units = modal.querySelector('input[name="bmi-units"]:checked').value;
+            const weightInput = modal.querySelector('#bmi-weight');
+            const heightInput = modal.querySelector('#bmi-height');
+            const weightLabel = modal.querySelector('#weight-label');
+            const heightLabel = modal.querySelector('#height-label');
+
+            if (action === 'unit-change') {
+                if (units === 'metric') {
+                    weightLabel.textContent = "Weight (kg):"; heightLabel.textContent = "Height (cm):";
+                } else {
+                    weightLabel.textContent = "Weight (lbs):"; heightLabel.textContent = "Height (in):";
+                }
+                statusDiv.textContent = ''; return;
+            }
+
+            const weight = parseFloat(weightInput.value);
+            const height = parseFloat(heightInput.value);
+            if (!weight || !height) throw new Error("Please enter both weight and height.");
+            
+            let bmi;
+            if (units === 'metric') bmi = weight / ((height / 100) ** 2);
+            else bmi = (weight / (height ** 2)) * 703;
+            
+            let category;
+            if (bmi < 18.5) category = "Underweight";
+            else if (bmi < 25) category = "Normal weight";
+            else if (bmi < 30) category = "Overweight";
+            else category = "Obesity";
+
+            modal.querySelector('#bmi-output').innerHTML = `Your BMI is <strong>${bmi.toFixed(2)}</strong> (${category}).`;
+            statusDiv.className = 'processing-status success'; statusDiv.textContent = "Calculated!";
+        }
+
+        async function colorPickerTool() {
+            const color = modal.querySelector('#color-input').value;
+            const r = parseInt(color.substr(1, 2), 16);
+            const g = parseInt(color.substr(3, 2), 16);
+            const b = parseInt(color.substr(5, 2), 16);
+            modal.querySelector('#color-picker-output').innerHTML = `
+                <div><strong>HEX:</strong> ${color}</div>
+                <div><strong>RGB:</strong> rgb(${r}, ${g}, ${b})</div>
+            `;
+        }
+
+        async function unitConverterTool(toolId, action) {
+            const units = {
+                Length: { m: 1, cm: 0.01, km: 1000, in: 0.0254, ft: 0.3048, mi: 1609.34 },
+                Mass: { kg: 1, g: 0.001, mg: 1e-6, lb: 0.453592, oz: 0.0283495 },
+                Temperature: { c: { f: v => v * 9/5 + 32, k: v => v + 273.15, c:v=>v }, f: { c: v => (v - 32) * 5/9, k: v => (v - 32) * 5/9 + 273.15, f:v=>v }, k: { c: v => v - 273.15, f: v => (v - 273.15) * 9/5 + 32, k:v=>v }}
+            };
+            const categorySelect = modal.querySelector('#uc-category');
+            const fromSelect = modal.querySelector('#uc-from');
+            const toSelect = modal.querySelector('#uc-to');
+            const input = modal.querySelector('#uc-input');
+            const output = modal.querySelector('#uc-output');
+
+            if (action === 'init') {
+                if(categorySelect.options.length === 0) {
+                     Object.keys(units).forEach(cat => categorySelect.add(new Option(cat, cat)));
+                }
+                const category = categorySelect.value;
+                const unitKeys = Object.keys(units[category]);
+                [fromSelect, toSelect].forEach(sel => {
+                    const currentVal = sel.value;
+                    sel.innerHTML = '';
+                    unitKeys.forEach(u => sel.add(new Option(u, u)));
+                    sel.value = currentVal; // try to preserve selection
+                });
+            }
+
+            const val = parseFloat(input.value);
+            if (isNaN(val)) { output.value = ''; return; }
+            
+            const category = categorySelect.value;
+            const fromUnit = fromSelect.value;
+            const toUnit = toSelect.value;
+            let result;
+
+            if (category === 'Temperature') {
+                result = units[category][fromUnit][toUnit](val);
+            } else {
+                const toBase = val * units[category][fromUnit];
+                result = toBase / units[category][toUnit];
+            }
+            output.value = parseFloat(result.toPrecision(6));
+        }
+
+        function stopwatchTool(toolId, action) {
+            const display = modal.querySelector('#stopwatch-display');
+            const startStopBtn = modal.querySelector('#sw-start-stop');
+            
+            const updateDisplay = (time) => {
+                let diff = time;
+                let ms = Math.floor((diff % 1000) / 10);
+                let secs = Math.floor((diff / 1000) % 60);
+                let mins = Math.floor((diff / (1000 * 60)) % 60);
+                display.textContent = [mins, secs].map(v => v.toString().padStart(2,'0')).join(':') + '.' + ms.toString().padStart(3,'0').slice(0,2);
+            };
+
+            const run = () => {
+                const newTime = Date.now() - stopwatchState.startTime + stopwatchState.elapsedTime;
+                updateDisplay(newTime);
+            };
+            
+            if(action === 'start-stop') {
+                if(!stopwatchState.running) {
+                    stopwatchState.startTime = Date.now();
+                    stopwatchInterval = setInterval(run, 10);
+                    stopwatchState.running = true;
+                    startStopBtn.textContent = "Stop";
+                } else {
+                    clearInterval(stopwatchInterval);
+                    stopwatchState.elapsedTime += Date.now() - stopwatchState.startTime;
+                    stopwatchState.running = false;
+                    startStopBtn.textContent = "Start";
+                }
+            } else if (action === 'reset') {
+                clearInterval(stopwatchInterval);
+                stopwatchState = { startTime: 0, elapsedTime: 0, running: false };
+                updateDisplay(0);
+                startStopBtn.textContent = "Start";
+            }
+        }
+
+    });
+    // --- SCRIPT END --- //
+    </script>
+</body>
+</html>
